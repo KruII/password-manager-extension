@@ -1,9 +1,8 @@
 // utils/crypto.ts
 // derive key using PBKDF2 to avoid external dependencies
 
-export async function deriveKey(master: string) {
+export async function deriveKey(master: string, salt: Uint8Array) {
   const enc = new TextEncoder().encode(master)
-  const salt = crypto.getRandomValues(new Uint8Array(16))
   const baseKey = await crypto.subtle.importKey("raw", enc, "PBKDF2", false, ["deriveKey"])
   return crypto.subtle.deriveKey(
     { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
@@ -12,6 +11,17 @@ export async function deriveKey(master: string) {
     false,
     ["encrypt", "decrypt"]
   )
+}
+
+export async function hashMaster(master: string, salt: Uint8Array) {
+  const enc = new TextEncoder().encode(master)
+  const baseKey = await crypto.subtle.importKey("raw", enc, "PBKDF2", false, ["deriveBits"])
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    baseKey,
+    256
+  )
+  return Array.from(new Uint8Array(bits))
 }
 
 export async function encrypt(data: string, key: CryptoKey) {
