@@ -3,6 +3,7 @@ import type { StoredEntry } from "~utils/storage"
 
 interface Props {
   entries: Record<string, StoredEntry>
+  onDelete?: (host: string) => void
 }
 
 const group = (entries: Record<string, StoredEntry>) => {
@@ -17,7 +18,7 @@ const group = (entries: Record<string, StoredEntry>) => {
   return res
 }
 
-export default function DomainTree({ entries }: Props) {
+export default function DomainTree({ entries, onDelete }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({})
   const groups = group(entries)
 
@@ -34,7 +35,16 @@ export default function DomainTree({ entries }: Props) {
           {open[base] && (
             <div style={{ marginLeft: 12 }}>
               {Object.entries(subs).map(([sub, e]) => (
-                <div key={sub}>{sub ? `${sub} - ${e.user}` : e.user}</div>
+                <div key={sub} style={{ display: "flex", alignItems: "center" }}>
+                  <span style={{ flex: 1 }}>
+                    {sub ? `${sub} - ${e.user}` : e.user}
+                  </span>
+                  {onDelete && (
+                    <button onClick={() => onDelete(sub ? `${sub}.${base}` : base)}>
+                      X
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
