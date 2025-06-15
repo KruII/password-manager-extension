@@ -1,9 +1,20 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
+import DomainTree from "~popup/DomainTree"
+import type { StoredEntry } from "~utils/storage"
 
 export default function Options() {
   const [host, setHost] = useState("")
   const [user, setUser] = useState("")
   const [pass, setPass] = useState("")
+  const [entries, setEntries] = useState<Record<string, StoredEntry>>({})
+
+  const refresh = () => {
+    chrome.runtime.sendMessage({ cmd: "list" }, (res) => {
+      if (res?.entries) setEntries(res.entries)
+    })
+  }
+
+  useEffect(refresh, [])
 
   const save = () => {
     chrome.runtime.sendMessage(
@@ -12,6 +23,7 @@ export default function Options() {
         setHost("")
         setUser("")
         setPass("")
+        refresh()
       }
     )
   }
@@ -19,6 +31,14 @@ export default function Options() {
   const gen = () => {
     const arr = crypto.getRandomValues(new Uint8Array(16))
     setPass(btoa(String.fromCharCode(...arr)))
+  }
+
+  const remove = (h: string) => {
+    chrome.runtime.sendMessage({ cmd: "delete-entry", host: h }, () => {
+      const cp = { ...entries }
+      delete cp[h]
+      setEntries(cp)
+    })
   }
 
   return (
@@ -41,6 +61,8 @@ export default function Options() {
       />
       <button onClick={gen}>Generate</button>
       <button onClick={save}>Save</button>
+      <h2 style={{ marginTop: 20 }}>Stored</h2>
+      <DomainTree entries={entries} onDelete={remove} />
     </div>
   )
 }
